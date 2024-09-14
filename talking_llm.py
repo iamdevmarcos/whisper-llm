@@ -7,11 +7,15 @@ import whisper
 import io
 import soundfile as sf
 import threading
+import pandas as pd
 
 from pynput import keyboard
 from dotenv import load_dotenv, find_dotenv
 from langchain_openai import OpenAI, ChatOpenAI
 from queue import Queue
+from langchain.agents.agent_types import AgentType
+from langchain_openai import ChatOpenAI
+from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 
 load_dotenv(find_dotenv())
 
@@ -28,6 +32,7 @@ class TalkingLLM():
         self.whisper = whisper.load_model(whisper_size)
         self.llm = ChatOpenAI(model=model)
         self.llm_queue = Queue()
+        self.create_agent()
     
     def start_stop_recording(self):
         if self.is_recording:
@@ -40,7 +45,14 @@ class TalkingLLM():
             self.is_recording = True
     
     def create_agent(self):
-        pass
+        df = pd.read_csv("df_rent.csv")
+        self.agent = create_pandas_dataframe_agent(
+            self.llm,
+            df,
+            prefix=agent_prompt_prefix,
+            verbose=True,
+            agent_type=AgentType.OPENAI_FUNCTIONS
+        )
     
     def save_and_transcribe(self):
         print('Saving the recording...')
@@ -53,9 +65,9 @@ class TalkingLLM():
         wav_file.close()
         
         result = self.whisper.transcribe("test.wav", fp16=False)
-        response = self.llm.invoke(result["text"])
+        response = self.agent.invoke(result["text"])
         
-        self.llm_queue.put(response.content)
+        self.llm_queue.put(response["output"])
         
     def convert_and_play(self):
         tts_text = ''
