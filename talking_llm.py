@@ -18,7 +18,7 @@ load_dotenv(find_dotenv())
 client = openai.Client()
 
 class TalkingLLM():
-    def __init__(self, model="gpt-3.5-turbo-0613", whisper_size="small"):
+    def __init__(self, model="gpt-3.5-turbo", whisper_size="small"):
         self.is_recording=False
         self.audio_data=[]
         self.samplerate=44100
